@@ -44,3 +44,8 @@ HTT_EMAIL=you@example.com HTT_PASSWORD='…' node tools/export-thoughts.mjs ~/Ho
 ```
 
 Then run `claude` inside `~/HoldThisThought`.
+
+### Connect Claude live (MCP)
+
+See [tools/mcp-server/README.md](../tools/mcp-server/README.md): `npm install`, `npm run login`,
+then `claude mcp add --scope user hold-this-thought -- node <repo>/tools/mcp-server/server.mjs`.

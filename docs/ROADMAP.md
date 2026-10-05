@@ -19,9 +19,8 @@ Last updated: 2026-10-04
 
 1. **Restore and upgrade the cloud.** Restore the paused Supabase project, apply the v2
    migration, deploy `thought-machine`, secure the account with an email.
-2. **MCP server for Claude.** A small local MCP server exposing `search_thoughts`,
-   `recent_learnings` and `add_thought`, so Claude Desktop / Claude Code can query and add to
-   the collection live instead of reading an export.
+2. ~~**MCP server for Claude.**~~ Done in `tools/mcp-server` (tested against a fake Supabase;
+   test against the real project once it is restored).
 3. **Weekly digest.** A scheduled job (Edge Function cron or Claude routine) that summarises the
    week's learnings and surfaces things learned more than once.
 4. **Spaced resurfacing of learnings.** A quiet "remember this?" card on the Library screen.

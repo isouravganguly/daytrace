@@ -35,6 +35,9 @@ flowchart LR
     Fn <--> PG
     Laptop["tools/export-thoughts.mjs<br/>(Mac)"] --> PG
     Laptop --> Folder["~/HoldThisThought/*.md<br/>read by Claude Code"]
+    Claude["Claude Code / Desktop"] -- "stdio" --> MCP["tools/mcp-server<br/>(Mac)"]
+    MCP --> PG
+    MCP -- "search / enrich" --> Fn
 ```
 
 ## Android code map (`app/src/main/java/dev/holdthisthought/`)
@@ -111,7 +114,11 @@ and cloud rows are kept. Signing out keeps local data.
 
 ## Using your thoughts with Claude
 
-1. **On the phone:** Settings → Export → Markdown, then share the file.
-2. **On the Mac:** `tools/export-thoughts.mjs` writes `~/HoldThisThought/YYYY-MM.md`,
-   `learnings.md` and a `CLAUDE.md` that tells Claude how to read the folder. Then run `claude`
-   in that folder and ask things like "what did I learn about Postgres this month?".
+1. **Live (best): MCP server.** `tools/mcp-server` exposes `search_thoughts`, `recent_thoughts`,
+   `list_todos`, `add_thought` and `complete_todo` to Claude Code and Claude Desktop. It signs in
+   once (`npm run login`), keeps a refreshing session in `~/.config/hold-this-thought/`, and calls
+   the same REST API, RLS rules and `thought-machine` function as the app. Thoughts added from
+   Claude reach the phone on its next sync pull. See `tools/mcp-server/README.md`.
+2. **Snapshot: folder export.** `tools/export-thoughts.mjs` writes `~/HoldThisThought/YYYY-MM.md`,
+   `learnings.md` and a `CLAUDE.md` guide. Then run `claude` in that folder.
+3. **From the phone:** Settings → Export → Markdown, then share the file.

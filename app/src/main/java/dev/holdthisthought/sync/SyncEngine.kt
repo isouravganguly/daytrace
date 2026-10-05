@@ -81,9 +81,38 @@ class SyncEngine(
     private suspend fun push(userId: String) {
         val pending = dao.pending()
         if (pending.isEmpty()) return
-        remote.push(pending.map { it.toPush(userId) })
-        pending.forEach { dao.markSynced(it.id, it.updatedAt) }
+        try {
+            remote.push(pending.map { it.toPush(userId) })
+            pending.forEach { dao.markSynced(it.id, it.updatedAt) }
+        } catch (e: Exception) {
+            if (!e.isOwnershipConflict()) throw e
+            pushOneByOne(pending, userId)
+        }
     }
+
+    /**
+     * Some rows already exist in the cloud under another account (for example an anonymous
+     * session that was lost), so Row Level Security rejects them. Push rows individually and
+     * give each rejected row a new id, so it becomes this account's own copy.
+     */
+    private suspend fun pushOneByOne(rows: List<Thought>, userId: String) {
+        rows.forEach { row ->
+            val pushed = try {
+                remote.push(listOf(row.toPush(userId)))
+                row
+            } catch (e: Exception) {
+                if (!e.isOwnershipConflict()) throw e
+                val copy = row.copy(id = UUID.randomUUID().toString())
+                dao.rekey(row.id, copy)
+                remote.push(listOf(copy.toPush(userId)))
+                copy
+            }
+            dao.markSynced(pushed.id, pushed.updatedAt)
+        }
+    }
+
+    private fun Throwable.isOwnershipConflict(): Boolean =
+        message?.contains("row-level security", ignoreCase = true) == true
 
     private suspend fun pull() {
         var cursor = prefs.pullCursor

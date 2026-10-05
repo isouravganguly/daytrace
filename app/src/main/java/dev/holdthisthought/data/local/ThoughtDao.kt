@@ -62,6 +62,16 @@ interface ThoughtDao {
     @Query("DELETE FROM thoughts")
     suspend fun hardDeleteAll()
 
+    @Query("DELETE FROM thoughts WHERE id = :id")
+    suspend fun hardDelete(id: String)
+
+    /** Moves a row to a new id, e.g. when its old id belongs to another cloud account. */
+    @Transaction
+    suspend fun rekey(oldId: String, moved: Thought) {
+        hardDelete(oldId)
+        upsert(moved)
+    }
+
     @Transaction
     suspend fun replaceAll(thoughts: List<Thought>) {
         hardDeleteAll()

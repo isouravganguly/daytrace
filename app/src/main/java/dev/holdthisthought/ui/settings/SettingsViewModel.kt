@@ -60,6 +60,10 @@ class SettingsViewModel(app: Application) : AndroidViewModel(app) {
     ) { pending, last, error -> SyncUi(pending, last, error) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), SyncUi())
 
+    /** Set after sign-up when Supabase wants the email confirmed; stays until sign-in. */
+    private val _awaitingConfirmation = MutableStateFlow(false)
+    val awaitingConfirmation: StateFlow<Boolean> = _awaitingConfirmation.asStateFlow()
+
     private val _busy = MutableStateFlow(false)
     val busy: StateFlow<Boolean> = _busy.asStateFlow()
 
@@ -72,16 +76,17 @@ class SettingsViewModel(app: Application) : AndroidViewModel(app) {
 
     fun signIn(email: String, password: String) = run("Signed in. Syncing your library…") {
         remote.signIn(email, password)
+        _awaitingConfirmation.value = false
         syncNowInternal()
     }
 
     fun createAccount(email: String, password: String) = run(null) {
         val signedIn = remote.signUp(email, password)
-        _message.value = if (signedIn) {
+        if (signedIn) {
+            _message.value = "Account created. Your thoughts are backing up."
             syncNowInternal()
-            "Account created. Your thoughts are backing up."
         } else {
-            "Check your inbox to confirm your email, then sign in."
+            _awaitingConfirmation.value = true
         }
     }
 
@@ -126,8 +131,28 @@ class SettingsViewModel(app: Application) : AndroidViewModel(app) {
             _busy.value = true
             runCatching { block() }
                 .onSuccess { successMessage?.let { _message.value = it } }
-                .onFailure { _message.value = it.message ?: "Something went wrong." }
+                .onFailure { _message.value = friendlyError(it) }
             _busy.value = false
+        }
+    }
+
+    /** Supabase errors include request dumps; show the person one plain sentence instead. */
+    private fun friendlyError(error: Throwable): String {
+        val raw = error.message.orEmpty()
+        return when {
+            raw.contains("rate_limit", true) || raw.contains("only request this after", true) ->
+                "Too many attempts. Wait a minute, then try again."
+            raw.contains("email_not_confirmed", true) || raw.contains("Email not confirmed", true) ->
+                "Confirm your email first: open the link Supabase sent you, then sign in."
+            raw.contains("invalid_credentials", true) || raw.contains("Invalid login credentials", true) ->
+                "Wrong email or password."
+            raw.contains("user_already_exists", true) || raw.contains("already registered", true) ->
+                "That email already has an account. Use Sign in."
+            raw.contains("weak_password", true) -> "Choose a stronger password."
+            raw.contains("Unable to resolve host", true) || raw.contains("timeout", true) ->
+                "Can't reach the server. Check your connection."
+            else -> raw.lineSequence().firstOrNull()?.substringBefore(" URL:")?.take(160)
+                ?.ifBlank { null } ?: "Something went wrong."
         }
     }
 }

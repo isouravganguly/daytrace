@@ -25,6 +25,7 @@ import androidx.compose.material.icons.outlined.CloudSync
 import androidx.compose.material.icons.outlined.Description
 import androidx.compose.material.icons.outlined.DataObject
 import androidx.compose.material.icons.outlined.Lock
+import androidx.compose.material.icons.outlined.MarkEmailUnread
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -62,6 +63,7 @@ fun SettingsScreen(
     val sync by viewModel.sync.collectAsStateWithLifecycle()
     val busy by viewModel.busy.collectAsStateWithLifecycle()
     val message by viewModel.message.collectAsStateWithLifecycle()
+    val awaitingConfirmation by viewModel.awaitingConfirmation.collectAsStateWithLifecycle()
 
     LaunchedEffect(message) {
         message?.let {
@@ -111,15 +113,24 @@ fun SettingsScreen(
                     SyncStatus(sync, busy, viewModel::syncNow)
                 }
                 AccountState.SIGNED_OUT -> {
-                    InfoRow(
-                        Icons.Outlined.CloudOff,
-                        "Only on this phone",
-                        "Sign in to back up your thoughts and keep them across devices.",
-                    )
+                    if (awaitingConfirmation) {
+                        InfoRow(
+                            Icons.Outlined.MarkEmailUnread,
+                            "Confirm your email",
+                            "Your account is created. Open the link Supabase emailed you, then " +
+                                "come back and tap Sign in with the same email and password.",
+                        )
+                    } else {
+                        InfoRow(
+                            Icons.Outlined.CloudOff,
+                            "Only on this phone",
+                            "Sign in to back up your thoughts and keep them across devices.",
+                        )
+                    }
                     Spacer(Modifier.height(16.dp))
                     CredentialsForm(
                         primaryLabel = "Sign in",
-                        secondaryLabel = "Create account",
+                        secondaryLabel = if (awaitingConfirmation) null else "Create account",
                         busy = busy,
                         onPrimary = viewModel::signIn,
                         onSecondary = viewModel::createAccount,

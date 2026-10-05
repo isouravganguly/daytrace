@@ -1,40 +1,32 @@
 package dev.holdthisthought
 
 import android.app.Application
-import androidx.work.Constraints
-import androidx.work.ExistingWorkPolicy
-import androidx.work.NetworkType
-import androidx.work.OneTimeWorkRequestBuilder
-import androidx.work.WorkManager
-import dev.holdthisthought.data.SupabaseRemoteDataSource
-import dev.holdthisthought.data.ThoughtDatabase
+import android.content.Context
+import dev.holdthisthought.data.AppPreferences
 import dev.holdthisthought.data.ThoughtRepository
-import dev.holdthisthought.sync.ThoughtSyncWorker
+import dev.holdthisthought.data.local.ThoughtDatabase
+import dev.holdthisthought.data.remote.SupabaseRemoteDataSource
+import dev.holdthisthought.sync.SyncEngine
+import dev.holdthisthought.sync.SyncScheduler
+
+/** Manual dependency wiring. Small enough that a DI framework would be overhead. */
+class AppContainer(context: Context) {
+    private val database = ThoughtDatabase.create(context)
+    val preferences = AppPreferences(context)
+    val remote = SupabaseRemoteDataSource.create()
+    val syncScheduler = SyncScheduler(context)
+    val repository = ThoughtRepository(database.thoughtDao(), syncScheduler::requestSync)
+    val syncEngine = SyncEngine(database.thoughtDao(), remote, preferences)
+}
 
 class ThoughtApplication : Application() {
-    private val database by lazy { ThoughtDatabase.create(this) }
-    val remoteDataSource by lazy { SupabaseRemoteDataSource.create() }
-
-    val repository by lazy {
-        ThoughtRepository(database.thoughtDao(), ::scheduleSync)
-    }
+    lateinit var container: AppContainer
+        private set
 
     override fun onCreate() {
         super.onCreate()
-        scheduleSync()
-    }
-
-    fun scheduleSync() {
-        val constraints = Constraints.Builder()
-            .setRequiredNetworkType(NetworkType.CONNECTED)
-            .build()
-        val request = OneTimeWorkRequestBuilder<ThoughtSyncWorker>()
-            .setConstraints(constraints)
-            .build()
-        WorkManager.getInstance(this).enqueueUniqueWork(
-            ThoughtSyncWorker.UNIQUE_WORK_NAME,
-            ExistingWorkPolicy.REPLACE,
-            request,
-        )
+        container = AppContainer(this)
+        container.syncScheduler.schedulePeriodic()
+        container.syncScheduler.requestSync()
     }
 }

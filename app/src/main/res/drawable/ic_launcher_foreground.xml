@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Bubble -->
+    <path
+        android:fillColor="#3A47A8"
+        android:pathData="M38,34 L70,34 A8,8 0 0 1 78,42 L78,62 A8,8 0 0 1 70,70 L52,70 L42,78 L43,70 L38,70 A8,8 0 0 1 30,62 L30,42 A8,8 0 0 1 38,34 Z" />
+    <!-- Spark -->
+    <path
+        android:fillColor="#F2BE73"
+        android:pathData="M54,41 L57,49 L65,52 L57,55 L54,63 L51,55 L43,52 L51,49 Z" />
+</vector>

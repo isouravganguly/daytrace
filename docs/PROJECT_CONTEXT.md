@@ -1,6 +1,6 @@
 # Hold This Thought — project context
 
-Last updated: 2026-07-26
+Last updated: 2026-10-04
 
 ## One-line idea
 
@@ -64,23 +64,20 @@ The first priority is capture reliability. AI and cloud sync are helpful enrichm
 
 ## Current user/product decisions
 
-- Use Gemini for AI model calls for cost reasons.
-- OpenAI SDK remains optional; consumer ChatGPT/OpenAI login/subscription should not be assumed usable for app API calls.
-- Use Supabase Edge Functions to call Gemini so `GEMINI_API_KEY` stays server-side.
-- Supabase anonymous auth is enabled for MVP testing.
-- Use `Continue privately` as the simplest privacy-preserving login path for now.
-- Keep personal/work theme visually consistent for MVP.
-- After every Android rebuild, install the APK into the emulator.
+- Personal, single-user app. Not meant to be shared or published.
+- The core value is **learnings**: things the user learned and doesn't want to relearn.
+  Kinds are Thought / Learning / Todo (the old "Note" became Learning).
+- The collection must be exportable and usable by Claude (Markdown export, a folder export
+  script, and later an MCP server).
+- Use Gemini through a Supabase Edge Function for AI (cost). Keys never ship in the APK.
+- No sign-in before capture. One email account for cloud backup. Anonymous sessions from v0.1
+  can be upgraded in place.
+- Work and Personal share one calm visual system, with light and dark themes.
+- After every Android rebuild, install the APK on the emulator.
 
-## Current MVP behavior
+## Current behaviour (v0.2.0)
 
-- App gates cloud-enabled builds behind auth/private mode.
-- User can continue privately using anonymous Supabase auth.
-- User can type a thought and save it locally immediately.
-- User can hold the speech CTA to capture voice through Android `SpeechRecognizer`.
-- Local classifier assigns `TODO`, `NOTE`, or `THOUGHT`.
-- WorkManager syncs pending local thoughts when connected.
-- Supabase Edge Function enriches synced thoughts with Gemini classification and embeddings.
-- Local lists hide completed items.
-- The search screen currently uses local text matching in-app; semantic search exists on the Edge Function/database side but is not fully wired into the Android UI yet.
-
+See `ARCHITECTURE.md` for detail. In short: instant local capture by text or voice
+(hold-to-talk or hands-free dictation), auto-classification, a Library with search and filters,
+editing and deletion with undo, two-way cloud sync with AI titles/tags, semantic search, and
+Markdown/JSON export.

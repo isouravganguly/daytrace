@@ -1,87 +1,36 @@
 # LLM handoff notes
 
-Last updated: 2026-07-26
+Last updated: 2026-10-04
 
-Read this before changing code.
+Read `PROJECT_CONTEXT.md`, then `ARCHITECTURE.md`, before changing code.
 
-## User preference/context
+## User preferences
 
-- The user wants proactive building, not just abstract planning.
-- Keep communication simple and concrete.
-- The product should feel modern, clean, calm, and personal.
-- Personal and Work spaces should currently share the same clean visual system.
-- The user dislikes the circular Speak CTA and wants better button design.
-- After every Android rebuild, reinstall the APK into the emulator.
+- Wants proactive building, explained simply and concretely.
+- Personal, single-user app. No sharing or multi-tenant features.
+- Calm, modern, warm UI. Work and Personal share one visual system.
+- Does not want a circular speak button. Voice is a wide pill ("Hold to talk", or tap for hands-free).
+- After every Android rebuild, reinstall the APK on the emulator (`Pixel_9_Pro_XL` AVD).
 
-## Current working directory
-
-`/path/to/HoldThisThought`
-
-## Important local files
-
-- Product docs:
-  - `docs/PROJECT_CONTEXT.md`
-  - `docs/ARCHITECTURE.md`
-  - `docs/IMPLEMENTATION_PLAN.md`
-  - `docs/ROADMAP.md`
-
-- Android:
-  - `app/src/main/java/dev/holdthisthought/MainActivity.kt`
-  - `app/src/main/java/dev/holdthisthought/ui/AppTheme.kt`
-  - `app/src/main/java/dev/holdthisthought/ui/ThoughtViewModel.kt`
-  - `app/src/main/java/dev/holdthisthought/ThoughtApplication.kt`
-  - `app/src/main/java/dev/holdthisthought/data/Thought.kt`
-  - `app/src/main/java/dev/holdthisthought/data/ThoughtRepository.kt`
-  - `app/src/main/java/dev/holdthisthought/data/ThoughtDao.kt`
-  - `app/src/main/java/dev/holdthisthought/data/SupabaseRemoteDataSource.kt`
-  - `app/src/main/java/dev/holdthisthought/sync/ThoughtSyncWorker.kt`
-
-- Supabase:
-  - `supabase/migrations/202607250001_create_thoughts.sql`
-  - `supabase/functions/thought-machine/index.ts`
-
-## Build/install commands
-
-Build:
+## Commands
 
 ```bash
-./gradlew :app:assembleDebug
-```
-
-Install in emulator after every rebuild:
-
-```bash
+./gradlew :app:assembleDebug :app:testDebugUnitTest
 adb install -r app/build/outputs/apk/debug/app-debug.apk
-```
-
-Launch:
-
-```bash
 adb shell monkey -p dev.holdthisthought 1
 ```
 
-## Secrets and config
+## Rules when changing code
 
-- Android reads `SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEY` from `local.properties` or Gradle properties.
-- Do not print or commit secret values.
-- `GEMINI_API_KEY` belongs in Supabase Edge Function custom secrets, not in Android.
+- Changing the Room entity means bumping the DB version, adding a `Migration`, and committing the
+  new `app/schemas/.../N.json`. Never use destructive migration; this is someone's memory.
+- New user-editable fields go into `RemoteThoughtPush`. AI fields must not.
+- Server schema changes go in a new file under `supabase/migrations/`.
+- Never print or commit `local.properties` values or tokens.
 
-## Known current state
+## Known state (2026-10-04)
 
-- Android app builds and has been installed on an emulator previously.
-- Supabase anonymous auth is enabled.
-- Edge Function `thought-machine` has been deployed previously.
-- Gemini enrichment has previously returned data and embeddings for saved thoughts.
-- UI was recently improved with a clean neutral theme and consistent shapes.
-- The voice CTA still needs redesign because the user does not like the circular Speak button.
-
-## Good next coding task
-
-Implement the new voice CTA:
-
-- Replace the circle with a wide, modern press-and-hold button.
-- Preserve the existing `SpeechRecognizer` behavior.
-- Keep the interaction simple: press starts listening, release stops.
-- Make states clear without clutter.
-- Build and reinstall into emulator after changes.
-
+- The v0.1 → v0.2 migration was tested on the emulator with real v1 data (8 rows preserved; NOTE→LEARNING).
+- The Supabase project hostname did not resolve (most likely paused). Cloud features are
+  untested against the new migration and function until it is restored and they are deployed.
+- The emulator holds an anonymous session from v0.1. Use "Secure my account" in Settings to keep it.

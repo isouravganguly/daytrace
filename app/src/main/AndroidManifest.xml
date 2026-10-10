@@ -53,6 +53,13 @@
         android:label="@string/app_name"
         android:supportsRtl="true"
         android:theme="@style/Theme.HoldThisThought">
+
+        <!-- ML Kit would initialise at every app start; PlantDetector initialises it on first use instead. -->
+        <provider
+            android:name="com.google.mlkit.common.internal.MlKitInitProvider"
+            android:authorities="${applicationId}.mlkitinitprovider"
+            tools:node="remove" />
+
         <activity
             android:name=".MainActivity"
             android:exported="true"

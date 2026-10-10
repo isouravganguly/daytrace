@@ -76,7 +76,7 @@ private fun AlarmScreen(onDone: () -> Unit) {
         if (bitmap == null) return@rememberLauncherForActivityResult
         checking = true
         scope.launch {
-            val result = runCatching { PlantDetector.check(bitmap) }.getOrNull()
+            val result = runCatching { PlantDetector.check(context, bitmap) }.getOrNull()
             checking = false
             when {
                 result == null -> message = "I couldn't look at that one. Try again 🌿"

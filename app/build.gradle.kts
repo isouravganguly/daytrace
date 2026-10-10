@@ -38,6 +38,18 @@ android {
         )
     }
 
+    buildTypes {
+        release {
+            // R8: shrinks, optimises and strips unused code (Compose is several times faster than debug).
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            // Personal sideloaded build: signed with the local debug key so it installs over the
+            // debug build without losing data. No release key is needed or committed.
+            signingConfig = signingConfigs.getByName("debug")
+        }
+    }
+
     buildFeatures {
         compose = true
         buildConfig = true

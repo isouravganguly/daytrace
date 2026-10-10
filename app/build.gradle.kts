@@ -47,6 +47,8 @@ android {
             // Personal sideloaded build: signed with the local debug key so it installs over the
             // debug build without losing data. No release key is needed or committed.
             signingConfig = signingConfigs.getByName("debug")
+            // Phones only: ML Kit's native libraries for x86 emulators would double the APK size.
+            ndk { abiFilters += listOf("arm64-v8a", "armeabi-v7a") }
         }
     }
 

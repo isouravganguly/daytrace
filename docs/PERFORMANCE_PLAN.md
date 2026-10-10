@@ -41,7 +41,7 @@ Each step is small, measured on the device and shipped separately. Cold start is
    - Request sync and collect when the app opens, not on every process start.
    - Show Today's layout immediately and fill the numbers in.
 5. **Data flow (F7).** Share one thoughts flow in Today and skip game recomputation when its inputs are unchanged.
-6. **APK size (F8, next).** Ship only `arm64-v8a` and `armeabi-v7a`, and consider unbundled ML Kit, where Play Services downloads the model.
+6. **APK size (F8, done for ABIs).** Ship only `arm64-v8a` and `armeabi-v7a`, and consider unbundled ML Kit, where Play Services downloads the model.
 7. **Later.**
    - A macrobenchmark module to generate a real baseline profile.
    - JankStats or `FrameMetrics` logging in debug builds to catch slow frames.
@@ -53,7 +53,7 @@ These are measured on the test phone: a release build, AOT-compiled, on a 120 Hz
 | Metric | Before | After |
 |---|---|---|
 | Cold start (`TotalTime`, ms) | 1,008–1,688 (debug) | **130–150** (steps 1 and 4) |
-| APK size | 76 MB (debug) | 48 MB (release, R8; ML Kit native libs are most of it) |
+| APK size | 76 MB (debug) | **22.8 MB** (release, R8, ARM-only native libs) |
 | CPU while Today sits idle | ~70% of a core | **~13%** average, 0% between Blip's moments |
 | Frames drawn while idle on Today | ~240/s (every vsync) | ~23/s average, only during blinks, glances and waves |
 | Frames with Blip scrolled off screen | ~60/s | **0** |

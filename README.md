@@ -102,3 +102,7 @@ The full setup is in [docs/README.md](docs/README.md).
 - [Architecture](docs/ARCHITECTURE.md): code map, data model, sync and search.
 - [Design system](docs/DESIGN_SYSTEM.md): tokens, colour roles, motion and Blip.
 - [Roadmap](docs/ROADMAP.md).
+
+## License
+
+[MIT](LICENSE) © 2026 Sourav Ganguly

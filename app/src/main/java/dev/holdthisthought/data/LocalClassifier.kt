@@ -23,10 +23,16 @@ object LocalClassifier {
         "you can use", "you have to", "always use", "never use", "don't forget",
     )
 
+    private val desireOpeners = listOf(
+        "i want", "i wish", "i'd love", "i would love", "someday", "one day i", "i dream",
+        "i'd like to", "i would like to", "wish:", "desire:", "i hope to",
+    )
+
     fun classify(text: String): ThoughtKind {
         val normalized = text.trim().lowercase()
         val firstWord = normalized.substringBefore(' ').trimEnd(',', ':', '.')
         return when {
+            desireOpeners.any { normalized.startsWith(it) } -> ThoughtKind.DESIRE
             normalized.startsWith("todo") ||
                 normalized.startsWith("to do") ||
                 normalized.startsWith("remind me") ||

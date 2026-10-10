@@ -28,8 +28,8 @@ android {
         applicationId = "dev.holdthisthought"
         minSdk = 26
         targetSdk = 36
-        versionCode = 2
-        versionName = "0.2.0"
+        versionCode = 4
+        versionName = "0.4.0"
         buildConfigField("String", "SUPABASE_URL", "\"${supabaseUrl.get()}\"")
         buildConfigField(
             "String",
@@ -64,6 +64,9 @@ dependencies {
     implementation("androidx.room:room-runtime:2.8.2")
     implementation("androidx.room:room-ktx:2.8.2")
     implementation("androidx.work:work-runtime-ktx:2.11.1")
+    implementation("androidx.glance:glance-appwidget:1.1.1")
+    implementation("androidx.health.connect:connect-client:1.1.0")
+    implementation("com.google.mlkit:image-labeling:17.0.9")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")
     implementation(platform("io.github.jan-tennert.supabase:bom:3.7.0"))
     implementation("io.github.jan-tennert.supabase:auth-kt")

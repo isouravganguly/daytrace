@@ -1,6 +1,16 @@
 # Hold This Thought — roadmap
 
-Last updated: 2026-10-04
+Last updated: 2026-10-10
+
+The product plan now lives in [DAYTRACE_PLAN.md](DAYTRACE_PLAN.md) (phases 1–4). This file keeps the
+history.
+
+## Done in v0.3.0 (Daytrace phase 1 + design v2)
+
+- Merged daytrace into the app: wake-up widget, usage collector + uploader, device settings.
+- Desire kind; check-ins for mood, meals, walks and day verdict.
+- Gamification: quests, XP, levels, streaks, badges, weekly challenges, daily goal, Blip mascot.
+- "Electric sky" theme, sun logo, adaptive navigation for tablets.
 
 ## Done in v0.2.0
 

@@ -36,6 +36,8 @@ class ThoughtRepository(
 
     suspend fun allVisible(): List<Thought> = dao.allVisible()
 
+    fun observeAllVisible(): Flow<List<Thought>> = dao.observeAllVisible()
+
     /** Saves a new capture. [kind] null means "let the app decide". */
     suspend fun capture(
         body: String,

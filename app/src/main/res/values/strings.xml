@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">Daytrace</string>
+    <string name="bedtime_guard_description">Daytrace bedtime lock. From your bedtime until you wake up, it notices when a non-essential app opens (only its name, never what\'s on screen) and shows a wind-down screen instead. Phone, messages and clock always work. Nothing leaves your phone.</string>
+    <string name="widget_description">Tap Good morning to log your wake-up</string>
+</resources>

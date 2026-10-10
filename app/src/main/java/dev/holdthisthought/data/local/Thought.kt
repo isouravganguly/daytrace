@@ -4,8 +4,11 @@ import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
 
-/** What a capture is. LEARNING is the core of the app: things worth not relearning. */
-enum class ThoughtKind { THOUGHT, LEARNING, TODO }
+/**
+ * What a capture is. LEARNING is the core of the app: things worth not relearning.
+ * DESIRE is something wanted: to do, have or become someday (not an actionable todo).
+ */
+enum class ThoughtKind { THOUGHT, LEARNING, TODO, DESIRE }
 
 /** Whether [Thought.kind] was guessed (AI may refine it) or chosen by the user (AI must not touch it). */
 enum class KindSource { AUTO, USER }

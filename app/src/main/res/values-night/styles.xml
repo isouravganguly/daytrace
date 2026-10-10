@@ -1,5 +1,5 @@
 <resources>
-    <color name="paper">#151513</color>
+    <color name="paper">#171A18</color>
     <style name="Theme.HoldThisThought" parent="android:style/Theme.Material.NoActionBar">
         <item name="android:windowBackground">@color/paper</item>
         <item name="android:statusBarColor">@android:color/transparent</item>

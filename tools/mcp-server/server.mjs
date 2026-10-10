@@ -14,7 +14,7 @@ import { z } from "zod";
 import { loadConfig, SupabaseSession } from "./supabase.mjs";
 
 const COLUMNS = "id,body,kind,kind_source,space,title,tags,created_at,completed_at";
-const KINDS = ["THOUGHT", "LEARNING", "TODO"];
+const KINDS = ["THOUGHT", "LEARNING", "TODO", "DESIRE"];
 const SPACES = ["WORK", "PERSONAL"];
 
 // ---------- formatting ----------

@@ -21,6 +21,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.AutoAwesome
 import androidx.compose.material.icons.outlined.AutoStories
+import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.Lightbulb
 import androidx.compose.material.icons.outlined.TaskAlt
 import androidx.compose.material.icons.rounded.Check
@@ -55,6 +56,7 @@ val ThoughtKind.label: String
         ThoughtKind.THOUGHT -> "Thought"
         ThoughtKind.LEARNING -> "Learning"
         ThoughtKind.TODO -> "Todo"
+        ThoughtKind.DESIRE -> "Desire"
     }
 
 val ThoughtKind.pluralLabel: String
@@ -62,6 +64,7 @@ val ThoughtKind.pluralLabel: String
         ThoughtKind.THOUGHT -> "Thoughts"
         ThoughtKind.LEARNING -> "Learnings"
         ThoughtKind.TODO -> "Todos"
+        ThoughtKind.DESIRE -> "Desires"
     }
 
 val ThoughtKind.icon: ImageVector
@@ -69,6 +72,7 @@ val ThoughtKind.icon: ImageVector
         ThoughtKind.THOUGHT -> Icons.Outlined.Lightbulb
         ThoughtKind.LEARNING -> Icons.Outlined.AutoStories
         ThoughtKind.TODO -> Icons.Outlined.TaskAlt
+        ThoughtKind.DESIRE -> Icons.Outlined.FavoriteBorder
     }
 
 val ThoughtSpace.label: String
@@ -85,8 +89,8 @@ fun Pill(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     icon: ImageVector? = null,
-    accent: Color = MaterialTheme.colorScheme.onSurface,
-    selectedContainer: Color = MaterialTheme.colorScheme.surfaceContainerHighest,
+    accent: Color = MaterialTheme.colorScheme.onPrimaryContainer,
+    selectedContainer: Color = MaterialTheme.colorScheme.primaryContainer,
 ) {
     val container by animateColorAsState(
         if (selected) selectedContainer else Color.Transparent, label = "pill-bg",
@@ -128,8 +132,8 @@ fun KindPill(
         selected = selected,
         onClick = onClick,
         icon = kind?.icon ?: Icons.Outlined.AutoAwesome,
-        accent = colors?.onContainer ?: MaterialTheme.colorScheme.onSurface,
-        selectedContainer = colors?.container ?: MaterialTheme.colorScheme.surfaceContainerHighest,
+        accent = colors?.onContainer ?: MaterialTheme.colorScheme.onPrimaryContainer,
+        selectedContainer = colors?.container ?: MaterialTheme.colorScheme.primaryContainer,
         modifier = modifier,
     )
 }

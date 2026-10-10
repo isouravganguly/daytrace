@@ -23,7 +23,7 @@ const CLASSIFY_MODEL = "gemini-3.1-flash-lite";
 const EMBED_MODEL = "gemini-embedding-2";
 const DIMENSIONS = 768;
 const BATCH = 20;
-const KINDS = ["THOUGHT", "LEARNING", "TODO"] as const;
+const KINDS = ["THOUGHT", "LEARNING", "TODO", "DESIRE"] as const;
 
 function response(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -52,8 +52,10 @@ async function analyse(body: string): Promise<Enrichment> {
     config: {
       systemInstruction: [
         "You organise a person's private captured notes. Never invent facts.",
-        "kind: TODO if the speaker intends to do something; LEARNING if it records something",
-        "they learned, a fact, technique, lesson or insight worth remembering; otherwise THOUGHT.",
+        "kind: TODO if the speaker intends to do a concrete task; DESIRE if it expresses something",
+        "they want, wish for or dream of (to do, have, experience or become), not a concrete task;",
+        "LEARNING if it records something they learned, a fact, technique, lesson or insight worth",
+        "remembering; otherwise THOUGHT.",
         "title: 3 to 8 words capturing the gist, in plain language, no trailing period.",
         "tags: 1 to 4 short lowercase topic tags (e.g. kotlin, postgres, health, career),",
         "no '#', hyphenate multi-word tags.",

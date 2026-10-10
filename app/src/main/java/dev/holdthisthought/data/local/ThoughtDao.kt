@@ -46,6 +46,9 @@ interface ThoughtDao {
     @Query("SELECT * FROM thoughts WHERE deletedAt IS NULL ORDER BY createdAt ASC")
     suspend fun allVisible(): List<Thought>
 
+    @Query("SELECT * FROM thoughts WHERE deletedAt IS NULL ORDER BY createdAt ASC")
+    fun observeAllVisible(): Flow<List<Thought>>
+
     @Query("SELECT * FROM thoughts WHERE syncState = 'PENDING' ORDER BY updatedAt ASC")
     suspend fun pending(): List<Thought>
 

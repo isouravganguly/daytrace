@@ -1,16 +1,28 @@
 # LLM handoff notes
 
-Last updated: 2026-10-04
+Last updated: 2026-10-10
 
-Read `PROJECT_CONTEXT.md`, then `ARCHITECTURE.md`, before changing code.
+Read `PROJECT_CONTEXT.md`, then `DAYTRACE_PLAN.md` (the current product plan), then
+`ARCHITECTURE.md`, before changing code.
 
 ## User preferences
 
 - Wants proactive building, explained simply and concretely.
 - Personal, single-user app. No sharing or multi-tenant features.
-- Calm, modern, warm UI. Work and Personal share one visual system.
+- The app is now **Daytrace**: one personal tracer for thoughts, learnings, desires, wake-up,
+  screen time, meals, mood, walks and the day's verdict (health later; never finance).
+- Wants it fun and gamified but **easy on the eyes**: soft, low-saturation palette with one colour
+  per tab (Today sky, Capture lavender, Library sage, You apricot; gold only for XP). Blip is a cute,
+  matte 2D character with arms and legs, playable (tap / double-tap / long-press) in the app and
+  on the widget. See `DAYTRACE_PLAN.md` §8.
+- Nudges must be ADHD-friendly: one-tap, varied, rewarding, capped and guilt-free (§8.4).
+- Logo: a simple gold sun (circle and bold rounded rays, **no face**) on a blue gradient. The
+  user rejected a swoosh and doesn't want eyes on the sun.
 - Does not want a circular speak button. Voice is a wide pill ("Hold to talk", or tap for hands-free).
-- After every Android rebuild, reinstall the APK on the emulator (`Pixel_9_Pro_XL` AVD).
+- After every Android rebuild, reinstall the APK on the test phone over USB (Xiaomi phones need
+  "Install via USB" turned on) and on the emulator if it's running.
+- Daytrace device tokens are entered by the user in You → Day tracing. Never hardcode, print or
+  commit them.
 
 ## Commands
 
@@ -28,9 +40,29 @@ adb shell monkey -p dev.holdthisthought 1
 - Server schema changes go in a new file under `supabase/migrations/`.
 - Never print or commit `local.properties` values or tokens.
 
-## Known state (2026-10-04)
+## Known state (2026-10-10)
 
-- The v0.1 → v0.2 migration was tested on the emulator with real v1 data (8 rows preserved; NOTE→LEARNING).
-- The Supabase project hostname did not resolve (most likely paused). Cloud features are
-  untested against the new migration and function until it is restored and they are deployed.
-- The emulator holds an anonymous session from v0.1. Use "Secure my account" in Settings to keep it.
+- v0.3.0: Room v3 (adds `entries`, `usage_intervals`, `wakeups`), DESIRE kind (server constraint
+  widened, `thought-machine` v3 deployed). Installed on the phone; the 2 → 3 migration is
+  additive and matches the exported schema.
+- Daytrace backend (`daytrace` Edge Function + `daytrace` schema) was built in another chat. No
+  device is registered yet; live upload/wake-up is unverified until the user enters a token.
+- Check-ins (mood, meals, walks, verdicts) are local only. Syncing them is phase 2.
+- v0.4.0: Health Connect (Room v4 `health_days`), `daytrace.health_daily` + `ingest_health()`,
+  `daytrace` function v2 with `/health` (source now in `supabase/functions/daytrace/`). The phone
+  has Google Fit (synced to Health Connect), Mi Health and MyFitnessPal. Usage access is granted.
+  Health Connect is connected; it held only Google Fit steps on 2026-10-10.
+- v0.4.x (§10): devices self-register via `POST /daytrace/register` after the owner signs in
+  (`daytrace.owners` = the user's account), so there is no token UI. First-launch onboarding (goal,
+  Health Connect, sign-in), fitness-first Today (hero with steps ring + quest dots, quick log,
+  collapsed "More"), cleaned-up You (Advanced section), and a redesigned widget. The user still needs
+  to sign in once on the phone (You → Account) for backup and device registration.
+- Dark mode of design v2 has not been checked on a device.
+- Cloud: 8 thoughts owned by 2 orphaned anonymous users; the user's email account exists. Ask
+  before deleting anything.
+- §11 (2026-10-10): logical day 04:00–04:00 (`DayClock`), "My day" schedule drives nudges (wake
+  10:00 … bedtime 02:00), Good night entry (`EntryType.BEDTIME`), `SleepEstimator` (phone-use
+  gaps) feeds `health_days` when Health Connect has no sleep, plant alarm (`alarm/`, ML Kit
+  on-device labels, `TakePicturePreview` so no photo is stored), and bedtime lock (`bedtime/`,
+  accessibility service, package names only, hold-10-s escape twice a night). Server: `/wakeup`
+  accepts the tap time (`log_wakeup(token, at)`).

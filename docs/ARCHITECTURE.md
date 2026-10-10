@@ -1,6 +1,6 @@
 # Hold This Thought — architecture
 
-Last updated: 2026-10-04 (v0.2.0)
+Last updated: 2026-10-10 (v0.3.0, "Daytrace"). Product plan: `DAYTRACE_PLAN.md`.
 
 A personal, single-user thought collector. Capture is instant and offline; the cloud is a
 backup plus an AI enrichment layer; exports make the collection usable by Claude and other tools.
@@ -57,7 +57,17 @@ flowchart LR
 | `export/ThoughtExporter.kt` | Markdown (LLM-friendly) and JSON exports. |
 | `ui/theme/` | Colours (light + dark), per-kind accent palette, serif display typography. |
 | `ui/components/` | Pills, kind badges, `ThoughtCard`, date helpers. |
-| `ui/capture/`, `ui/library/`, `ui/settings/` | One screen + one `AndroidViewModel` each. |
+| `ui/capture/`, `ui/library/`, `ui/settings/` | One screen + one `AndroidViewModel` each. Settings is the "You" tab. |
+| `data/local/TraceEntities.kt`, `TraceDao.kt` | Check-ins (`entries`), app usage (`usage_intervals`), `wakeups`. |
+| `data/CheckInRepository.kt` | Mood, meal, walk and verdict logging (local; sync is phase 2). |
+| `daytrace/` | Device-token client for the `daytrace` function: settings (excluded from backup), `IntervalBuilder` (pure), `UsageCollector`, uploader, workers (15-min collect, wake-up retry), boot receiver. |
+| `game/GameEngine.kt` | Pure: quests, XP, levels, streak (with weekly shield), badges, weekly challenges, nudges. Derived from data, never stored. |
+| `widget/` | Glance "Good morning" widget with Blip. |
+| `ui/today/` | Today: Blip hero, quests, challenges, mood, meals, screen time; check-in sheets. |
+| `ui/you/` | Profile (level, badges, 12-week calendar) and day-tracing device settings. |
+| `ui/components/Blip.kt` | The mascot: matte 2D with arms and legs; moods, reactions (tap/double-tap/long-press), level evolutions. |
+| `health/` | Health Connect (read-only): `HealthConnectSource` (availability, permissions, one day's steps/walks/sleep/meals), `HealthRepository` (re-reads the last 7 days into `health_days`), the required rationale screen. Feeds GameEngine (Move/Fuel auto-complete) and nudges; daily totals upload to `POST /daytrace/health`. |
+| `notify/` | Nudges: pure `NudgeScheduler` (what's due), rotating `NudgeCopy`, `Notifier` (one-tap actions), `NudgeActionReceiver` (logs + reward), `NudgePrefs`. Checked by the 15-minute worker. |
 
 ## Data model
 

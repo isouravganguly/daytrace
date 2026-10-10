@@ -78,6 +78,13 @@ class SupabaseRemoteDataSource private constructor(
 
     fun currentUser(): UserInfo? = client?.auth?.currentUserOrNull()
 
+    /** Access token of a signed-in email account (not anonymous), for registering this device. */
+    fun ownerAccessToken(): String? {
+        val auth = client?.auth ?: return null
+        if (auth.currentUserOrNull()?.isAnonymous != false) return null
+        return auth.currentSessionOrNull()?.accessToken
+    }
+
     suspend fun signIn(email: String, password: String) {
         requireClient().auth.signInWith(Email) {
             this.email = email.trim()

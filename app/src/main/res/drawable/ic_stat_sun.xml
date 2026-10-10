@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Notification icon: the Daytrace sun, single colour. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:pathData="M12,2.6v1.6M18.65,5.35l-1.13,1.13M21.4,12h-1.6M18.65,18.65l-1.13,-1.13M12,21.4v-1.6M5.35,18.65l1.13,-1.13M2.6,12h1.6M5.35,5.35l1.13,1.13"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="2.4"
+        android:strokeLineCap="round" />
+    <path android:fillColor="#FFFFFFFF" android:pathData="M12,12m-4.6,0a4.6,4.6 0 1,1 9.2,0a4.6,4.6 0 1,1 -9.2,0" />
+</vector>

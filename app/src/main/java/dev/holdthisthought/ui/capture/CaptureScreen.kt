@@ -14,6 +14,13 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandHorizontally
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.ui.unit.sp
+import dev.holdthisthought.ui.theme.Motion
+import dev.holdthisthought.ui.theme.pressSquish
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkHorizontally
@@ -84,11 +91,13 @@ import dev.holdthisthought.ui.components.KindPill
 import dev.holdthisthought.ui.components.SpaceToggle
 import dev.holdthisthought.ui.components.label
 import dev.holdthisthought.ui.theme.CanvasTextStyle
-import java.time.LocalDate
-import java.time.format.DateTimeFormatter
 
+/**
+ * The capture box at the top of the Thoughts tab: type or talk, Daytrace sorts it, tap Keep.
+ * Kind chips only appear once there's something to sort, so the empty state stays calm.
+ */
 @Composable
-fun CaptureScreen(
+fun Composer(
     snackbar: SnackbarHostState,
     modifier: Modifier = Modifier,
     viewModel: CaptureViewModel = viewModel(),
@@ -114,58 +123,59 @@ fun CaptureScreen(
 
     val hasText = draft.isNotBlank() || speech.partial.isNotBlank()
 
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .imePadding()
-            .padding(horizontal = 20.dp),
+    Surface(
+        shape = MaterialTheme.shapes.large,
+        color = MaterialTheme.colorScheme.surfaceContainerLowest,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+        modifier = modifier.fillMaxWidth(),
     ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.fillMaxWidth().padding(top = 12.dp, bottom = 4.dp),
-        ) {
-            Text(
-                LocalDate.now().format(DateTimeFormatter.ofPattern("EEEE, d MMMM")).uppercase(),
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.weight(1f),
-            )
-            SpaceToggle(space = space, onChange = viewModel::onSpaceChange)
-        }
-
-        CaptureCanvas(
-            draft = draft,
-            partial = speech.partial,
-            isListening = speech.isListening,
-            onDraftChange = viewModel::onDraftChange,
-            modifier = Modifier.weight(1f),
-        )
-
-        KindRow(
-            selected = kind,
-            autoGuess = if (hasText) viewModel.guessedKind(draft + " " + speech.partial) else null,
-            onSelect = viewModel::onKindChange,
-        )
-        Spacer(Modifier.height(14.dp))
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
-        ) {
-            VoiceButton(
+        Column(Modifier.padding(start = 18.dp, end = 18.dp, top = 8.dp, bottom = 16.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                Text(
+                    "New thought",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.weight(1f),
+                )
+                SpaceToggle(space = space, onChange = viewModel::onSpaceChange)
+            }
+            CaptureCanvas(
+                draft = draft,
+                partial = speech.partial,
                 isListening = speech.isListening,
-                level = speech.level,
-                onStart = viewModel::startListening,
-                onStop = viewModel::stopListening,
-                modifier = Modifier.weight(1f),
+                onDraftChange = viewModel::onDraftChange,
             )
             AnimatedVisibility(
                 visible = hasText,
-                enter = fadeIn() + expandHorizontally(expandFrom = Alignment.Start),
-                exit = fadeOut() + shrinkHorizontally(shrinkTowards = Alignment.Start),
+                enter = fadeIn(Motion.standard()) + expandVertically(Motion.standard()),
+                exit = fadeOut(Motion.standard(Motion.Duration.short)) + shrinkVertically(Motion.standard()),
             ) {
-                Row {
-                    Spacer(Modifier.width(10.dp))
-                    KeepButton(onClick = viewModel::save)
+                Column {
+                    KindRow(
+                        selected = kind,
+                        autoGuess = if (hasText) viewModel.guessedKind(draft + " " + speech.partial) else null,
+                        onSelect = viewModel::onKindChange,
+                    )
+                    Spacer(Modifier.height(12.dp))
+                }
+            }
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                VoiceButton(
+                    isListening = speech.isListening,
+                    level = speech.level,
+                    onStart = viewModel::startListening,
+                    onStop = viewModel::stopListening,
+                    modifier = Modifier.weight(1f),
+                )
+                AnimatedVisibility(
+                    visible = hasText,
+                    enter = fadeIn() + expandHorizontally(Motion.Springs.bouncy(), expandFrom = Alignment.Start),
+                    exit = fadeOut() + shrinkHorizontally(shrinkTowards = Alignment.Start),
+                ) {
+                    Row {
+                        Spacer(Modifier.width(10.dp))
+                        KeepButton(onClick = viewModel::save)
+                    }
                 }
             }
         }
@@ -178,16 +188,16 @@ private fun CaptureCanvas(
     partial: String,
     isListening: Boolean,
     onDraftChange: (String) -> Unit,
-    modifier: Modifier = Modifier,
 ) {
     val focusRequester = remember { FocusRequester() }
     val muted = MaterialTheme.colorScheme.onSurfaceVariant
-    val textStyle = CanvasTextStyle.copy(color = MaterialTheme.colorScheme.onSurface)
+    val textStyle = CanvasTextStyle.copy(color = MaterialTheme.colorScheme.onSurface, fontSize = 21.sp, lineHeight = 30.sp)
 
     Box(
-        modifier = modifier
+        modifier = Modifier
             .fillMaxWidth()
-            .padding(top = 20.dp, bottom = 12.dp),
+            .heightIn(min = 92.dp, max = 260.dp)
+            .padding(top = 8.dp, bottom = 12.dp),
     ) {
         if (isListening || partial.isNotBlank()) {
             // While dictating, show committed words plus the live phrase in a softer colour.
@@ -198,7 +208,7 @@ private fun CaptureCanvas(
                     withStyle(SpanStyle(color = muted)) { append(partial) }
                 }
             }
-            Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
+            Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState())) {
                 if (text.isEmpty()) {
                     Text("Listening…", style = textStyle.copy(color = muted))
                 } else {
@@ -213,19 +223,17 @@ private fun CaptureCanvas(
                 cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
                 keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
                 modifier = Modifier
-                    .fillMaxSize()
+                    .fillMaxWidth()
                     .focusRequester(focusRequester)
                     .semantics { contentDescription = "Thought text" },
                 decorationBox = { inner ->
-                    Box(Modifier.fillMaxSize()) {
+                    Box(Modifier.fillMaxWidth()) {
                         if (draft.isEmpty()) {
                             Column {
                                 Text("What's on your mind?", style = textStyle.copy(color = muted))
-                                Spacer(Modifier.height(12.dp))
+                                Spacer(Modifier.height(6.dp))
                                 Text(
-                                    "Type, or hold the mic and talk. Start with \"TIL\" for a " +
-                                        "learning or \"todo\" for a task — or just say it and the " +
-                                        "app will sort it.",
+                                    "Type or talk. Daytrace sorts it into a thought, learning, todo or wish.",
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = muted.copy(alpha = 0.8f),
                                 )
@@ -293,16 +301,17 @@ private fun VoiceButton(
 
     val container by animateColorAsState(
         if (isListening) MaterialTheme.colorScheme.primary
-        else MaterialTheme.colorScheme.surfaceContainerHigh,
+        else MaterialTheme.colorScheme.primaryContainer,
         label = "voice-bg",
     )
     val content = if (isListening) MaterialTheme.colorScheme.onPrimary
-    else MaterialTheme.colorScheme.onSurface
+    else MaterialTheme.colorScheme.onPrimaryContainer
 
     Box(
         contentAlignment = Alignment.Center,
         modifier = modifier
-            .height(60.dp)
+            .pressSquish()
+            .height(54.dp)
             .clip(CircleShape)
             .background(container)
             .semantics { contentDescription = if (isListening) "Stop listening" else "Talk" }
@@ -406,9 +415,9 @@ private fun KeepButton(onClick: () -> Unit) {
     Surface(
         onClick = onClick,
         shape = CircleShape,
-        color = MaterialTheme.colorScheme.onSurface,
-        contentColor = MaterialTheme.colorScheme.surface,
-        modifier = Modifier.height(60.dp),
+        color = MaterialTheme.colorScheme.primary,
+        contentColor = MaterialTheme.colorScheme.onPrimary,
+        modifier = Modifier.pressSquish().height(54.dp),
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,

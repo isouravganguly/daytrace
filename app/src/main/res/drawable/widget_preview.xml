@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:drawable="@drawable/widget_background" android:width="220dp" android:height="120dp" />
+    <item android:drawable="@drawable/blip_sleepy" android:left="12dp" android:top="14dp" android:width="52dp" android:height="52dp" android:gravity="top|left" />
+    <item android:drawable="@drawable/widget_button" android:left="74dp" android:right="16dp" android:top="52dp" android:height="50dp" android:gravity="top|fill_horizontal" />
+</layer-list>

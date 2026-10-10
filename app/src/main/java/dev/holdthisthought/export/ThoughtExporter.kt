@@ -87,5 +87,6 @@ object ThoughtExporter {
             ThoughtKind.THOUGHT -> "Thought"
             ThoughtKind.LEARNING -> "Learning"
             ThoughtKind.TODO -> "Todo"
+            ThoughtKind.DESIRE -> "Desire"
         }
 }

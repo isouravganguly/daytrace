@@ -1,5 +1,24 @@
 package dev.holdthisthought.ui.settings
 
+import androidx.compose.foundation.layout.widthIn
+import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
+import androidx.compose.material.icons.automirrored.outlined.ArrowBack
+import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.FilterChip
+import dev.holdthisthought.data.AppPreferences
+import dev.holdthisthought.ui.today.TodayViewModel
+import dev.holdthisthought.ui.you.HealthSection
+import dev.holdthisthought.ui.you.NudgesSection
+import dev.holdthisthought.ui.you.SleepSection
+import dev.holdthisthought.ui.you.ProfileSection
+import dev.holdthisthought.ui.you.TracingSection
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
@@ -53,11 +72,61 @@ import dev.holdthisthought.BuildConfig
 import dev.holdthisthought.ui.components.relativeTime
 import java.time.LocalDate
 
+/** The You tab: your progress, with settings one tap away behind the gear. */
+@Composable
+fun YouScreen(
+    snackbar: SnackbarHostState,
+    modifier: Modifier = Modifier,
+    todayViewModel: TodayViewModel = viewModel(),
+) {
+    var showSettings by rememberSaveable { mutableStateOf(false) }
+    BackHandler(enabled = showSettings) { showSettings = false }
+    AnimatedContent(
+        targetState = showSettings,
+        transitionSpec = {
+            val dir = if (targetState) 1 else -1
+            (slideInHorizontally { it * dir / 4 } + fadeIn()) togetherWith (slideOutHorizontally { -it * dir / 4 } + fadeOut())
+        },
+        label = "you",
+        modifier = modifier,
+    ) { settings ->
+        if (settings) {
+            SettingsScreen(snackbar, onBack = { showSettings = false }, todayViewModel = todayViewModel)
+        } else {
+            val game by todayViewModel.game.collectAsStateWithLifecycle()
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Column(Modifier.widthIn(max = 760.dp)) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth().padding(top = 12.dp, bottom = 8.dp),
+                    ) {
+                        Text("You", style = MaterialTheme.typography.headlineLarge, modifier = Modifier.weight(1f))
+                        IconButton(onClick = { showSettings = true }) {
+                            Icon(Icons.Outlined.Settings, contentDescription = "Settings")
+                        }
+                    }
+                    game?.let { ProfileSection(it) }
+                    Spacer(Modifier.height(32.dp))
+                }
+            }
+        }
+    }
+}
+
+/** Every setting in one place: fitness, sleep, nudges, this phone, account. */
 @Composable
 fun SettingsScreen(
     snackbar: SnackbarHostState,
+    onBack: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: SettingsViewModel = viewModel(),
+    todayViewModel: TodayViewModel = viewModel(),
 ) {
     val (account, email) = viewModel.account.collectAsStateWithLifecycle().value
     val sync by viewModel.sync.collectAsStateWithLifecycle()
@@ -79,70 +148,93 @@ fun SettingsScreen(
 
     fun export(format: ExportFormat) {
         pendingFormat = format
-        exportLauncher.launch("hold-this-thought-${LocalDate.now()}.${format.extension}")
+        exportLauncher.launch("daytrace-thoughts-${LocalDate.now()}.${format.extension}")
     }
+
+    val stepGoal by todayViewModel.stepGoal.collectAsStateWithLifecycle()
 
     Column(
         modifier = modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .padding(horizontal = 20.dp),
+            .padding(horizontal = 16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Text(
-            "Settings",
-            style = MaterialTheme.typography.headlineLarge,
-            modifier = Modifier.padding(top = 16.dp, bottom = 20.dp),
-        )
+      Column(Modifier.widthIn(max = 760.dp)) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(top = 12.dp, bottom = 8.dp),
+        ) {
+            IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Back") }
+            Spacer(Modifier.width(4.dp))
+            Text("Settings", style = MaterialTheme.typography.headlineMedium)
+        }
 
-        SectionLabel("Cloud backup")
+        Spacer(Modifier.height(12.dp))
+        SectionLabel("Daily step goal")
+        Card {
+            Text(
+                "Reaching it completes your Move quest.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(Modifier.height(10.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                AppPreferences.STEP_GOALS.forEach { option ->
+                    FilterChip(
+                        selected = stepGoal == option,
+                        onClick = { todayViewModel.setStepGoal(option) },
+                        label = { Text("%,d".format(option)) },
+                    )
+                }
+            }
+        }
+
+        Spacer(Modifier.height(28.dp))
+        SectionLabel("Health")
+        Card { HealthSection() }
+
+        Spacer(Modifier.height(28.dp))
+        SectionLabel("Sleep & mornings")
+        Card { SleepSection() }
+
+        Spacer(Modifier.height(28.dp))
+        SectionLabel("Nudges & my day")
+        Card { NudgesSection() }
+
+        Spacer(Modifier.height(28.dp))
+        SectionLabel("Screen time & widget")
+        Card { TracingSection() }
+
+        Spacer(Modifier.height(28.dp))
+        SectionLabel("Account & backup")
         Card {
             when (account) {
-                AccountState.NOT_CONFIGURED -> InfoRow(
+                AccountState.NOT_CONFIGURED -> InfoRow(Icons.Outlined.CloudOff, "Backup isn't set up in this build", null)
+                AccountState.LOADING -> InfoRow(Icons.Outlined.CloudSync, "Checking…", null)
+                AccountState.UNREACHABLE -> InfoRow(
                     Icons.Outlined.CloudOff,
-                    "Not set up in this build",
-                    "Add SUPABASE_URL and SUPABASE_PUBLISHABLE_KEY to local.properties.",
+                    "Backup is offline for now",
+                    "Everything stays safe on this phone and backs up when the server is back.",
                 )
-                AccountState.LOADING -> InfoRow(Icons.Outlined.CloudSync, "Checking account…", null)
-                AccountState.UNREACHABLE -> {
-                    InfoRow(
-                        Icons.Outlined.CloudOff,
-                        "Can't reach your backup",
-                        "You're still signed in. Thoughts are safe on this phone and will back up " +
-                            "once the server is reachable. (A paused Supabase project causes this.)",
-                    )
-                    SyncStatus(sync, busy, viewModel::syncNow)
-                }
                 AccountState.SIGNED_OUT -> {
-                    if (awaitingConfirmation) {
-                        InfoRow(
-                            Icons.Outlined.MarkEmailUnread,
-                            "Confirm your email",
-                            "Your account is created. Open the link Supabase emailed you, then " +
-                                "come back and tap Sign in with the same email and password.",
-                        )
-                    } else {
-                        InfoRow(
-                            Icons.Outlined.CloudOff,
-                            "Only on this phone",
-                            "Sign in to back up your thoughts and keep them across devices.",
-                        )
-                    }
+                    InfoRow(
+                        if (awaitingConfirmation) Icons.Outlined.MarkEmailUnread else Icons.Outlined.CloudOff,
+                        if (awaitingConfirmation) "Confirm your email" else "Not backed up yet",
+                        if (awaitingConfirmation) "Open the link we emailed you, then sign in here."
+                        else "Sign in once and everything backs up by itself.",
+                    )
                     Spacer(Modifier.height(16.dp))
                     CredentialsForm(
                         primaryLabel = "Sign in",
-                        secondaryLabel = if (awaitingConfirmation) null else "Create account",
+                        secondaryLabel = null,
                         busy = busy,
                         onPrimary = viewModel::signIn,
-                        onSecondary = viewModel::createAccount,
+                        onSecondary = null,
                     )
                 }
                 AccountState.ANONYMOUS -> {
-                    InfoRow(
-                        Icons.Outlined.Lock,
-                        "Private session",
-                        "Backed up, but tied to this install. Add an email and password so a " +
-                            "reinstall or new phone — or a script on your laptop — can get them back.",
-                    )
+                    InfoRow(Icons.Outlined.Lock, "Private session", "Add an email so a new phone can get everything back.")
                     Spacer(Modifier.height(16.dp))
                     CredentialsForm(
                         primaryLabel = "Secure my account",
@@ -151,22 +243,22 @@ fun SettingsScreen(
                         onPrimary = viewModel::secureAccount,
                         onSecondary = null,
                     )
-                    SyncStatus(sync, busy, viewModel::syncNow)
                 }
                 AccountState.SIGNED_IN -> {
-                    InfoRow(Icons.Outlined.CloudDone, "Backed up", email)
+                    InfoRow(Icons.Outlined.CloudDone, "Everything backs up automatically", email)
+                    Spacer(Modifier.height(12.dp))
                     SyncStatus(sync, busy, viewModel::syncNow)
                     TextButton(onClick = viewModel::signOut, enabled = !busy) { Text("Sign out") }
                 }
             }
         }
 
+
         Spacer(Modifier.height(28.dp))
-        SectionLabel("Export")
+        SectionLabel("Export thoughts")
         Card {
             Text(
-                "Save everything as a file. Markdown reads well and is ideal for handing to " +
-                    "Claude or another assistant to summarise; JSON is for scripts.",
+                "Save your thoughts as a file. Markdown is ideal for handing to Claude; JSON is for scripts.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -185,23 +277,15 @@ fun SettingsScreen(
             }
         }
 
-        Spacer(Modifier.height(28.dp))
-        SectionLabel("About")
-        Card {
-            Text(
-                "Every thought is saved on this phone first, instantly and offline. Backup and AI " +
-                    "tagging happen quietly in the background. Your words are never rewritten.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Spacer(Modifier.height(10.dp))
-            Text(
-                "Hold This Thought ${BuildConfig.VERSION_NAME}",
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
+        Spacer(Modifier.height(20.dp))
+        Text(
+            "Daytrace ${BuildConfig.VERSION_NAME} · everything is saved on this phone first and backed up quietly.",
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(horizontal = 4.dp),
+        )
         Spacer(Modifier.height(32.dp))
+      }
     }
 }
 
@@ -254,7 +338,6 @@ private fun InfoRow(icon: ImageVector, title: String, body: String?) {
 
 @Composable
 private fun SyncStatus(sync: SyncUi, busy: Boolean, onSyncNow: () -> Unit) {
-    Spacer(Modifier.height(16.dp))
     Row(verticalAlignment = Alignment.CenterVertically) {
         Column(Modifier.weight(1f)) {
             Text(

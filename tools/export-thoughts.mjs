@@ -73,7 +73,7 @@ async function fetchThoughts({ url, key }, token) {
   }
 }
 
-const label = { THOUGHT: "Thought", LEARNING: "Learning", TODO: "Todo" };
+const label = { THOUGHT: "Thought", LEARNING: "Learning", TODO: "Todo", DESIRE: "Desire" };
 
 function entry(t) {
   const d = new Date(t.created_at);

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Daytrace: a simple sun. Core plus eight bold rounded rays. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:pathData="M54.00,32.50 L54.00,27.50 M69.20,38.80 L72.74,35.26 M75.50,54.00 L80.50,54.00 M69.20,69.20 L72.74,72.74 M54.00,75.50 L54.00,80.50 M38.80,69.20 L35.26,72.74 M32.50,54.00 L27.50,54.00 M38.80,38.80 L35.26,35.26"
+        android:strokeColor="#FF000000"
+        android:strokeWidth="8.5"
+        android:strokeLineCap="round" />
+    <path
+        android:fillColor="#FF000000"
+        android:pathData="M54,54m-15,0a15,15 0 1,1 30,0a15,15 0 1,1 -30,0" />
+</vector>

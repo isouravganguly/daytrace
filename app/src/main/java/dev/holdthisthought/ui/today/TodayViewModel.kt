@@ -33,6 +33,7 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.time.Instant
@@ -87,8 +88,12 @@ class TodayViewModel(application: Application) : AndroidViewModel(application) {
 
     val stepGoal: StateFlow<Int> = container.preferences.stepGoal
 
+    // One Room query for all thoughts, shared by the game and today's captures.
+    private val thoughts = container.repository.observeAllVisible()
+        .shareIn(viewModelScope, SharingStarted.Eagerly, replay = 1)
+
     val game: StateFlow<GameState?> = combine(
-        combine(container.repository.observeAllVisible(), checkIns.entries, daytrace.wakeups, health.days, ::Inputs),
+        combine(thoughts, checkIns.entries, daytrace.wakeups, health.days, ::Inputs),
         today,
         wakeTarget,
         stepGoal,
@@ -104,7 +109,7 @@ class TodayViewModel(application: Application) : AndroidViewModel(application) {
         entries.filter { DayClock.logicalDate(it.occurredAt, zone) == day }
     }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
-    val todayThoughts: StateFlow<List<Thought>> = combine(container.repository.observeAllVisible(), today) { all, day ->
+    val todayThoughts: StateFlow<List<Thought>> = combine(thoughts, today) { all, day ->
         val zone = ZoneId.systemDefault()
         all.filter { DayClock.logicalDate(it.createdAt, zone) == day }.reversed()
     }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())

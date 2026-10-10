@@ -35,10 +35,12 @@ class AppContainer(context: Context) {
     private val database = ThoughtDatabase.create(context)
     val traceDao = database.traceDao()
     val preferences = AppPreferences(context)
-    val remote = SupabaseRemoteDataSource.create()
+    // Building the Supabase/Ktor client is the most expensive part of start-up, so it happens on
+    // first use (normally on a background thread, below), not while the first frame is drawn.
+    val remote by lazy { SupabaseRemoteDataSource.create() }
     val syncScheduler = SyncScheduler(context)
     val repository = ThoughtRepository(database.thoughtDao(), syncScheduler::requestSync)
-    val syncEngine = SyncEngine(database.thoughtDao(), remote, preferences)
+    val syncEngine by lazy { SyncEngine(database.thoughtDao(), remote, preferences) }
     val checkIns = CheckInRepository(traceDao)
 
     // Daytrace: wake-ups and app usage, sent to the `daytrace` function with a device token.
@@ -71,15 +73,17 @@ class ThoughtApplication : Application() {
     override fun onCreate() {
         super.onCreate()
         container = AppContainer(this)
-        container.syncScheduler.schedulePeriodic()
-        container.syncScheduler.requestSync()
-        container.daytraceScheduler.schedulePeriodic()
-        container.daytraceScheduler.requestCollect()
-        container.notifier.ensureChannel()
-        AlarmService.ensureChannel(this)
-        container.plantAlarm.schedule()
-        // As soon as the owner is signed in, this phone gets its own daytrace token.
+        // Nothing here blocks the first frame: scheduling and the Supabase client are set up in
+        // the background. Fresh sync and collection are requested when the app is opened
+        // (MainActivity.onStart), not on every process start, so background workers and widget
+        // updates don't trigger extra work.
         container.appScope.launch {
+            container.notifier.ensureChannel()
+            AlarmService.ensureChannel(this@ThoughtApplication)
+            container.syncScheduler.schedulePeriodic()
+            container.daytraceScheduler.schedulePeriodic()
+            container.plantAlarm.schedule()
+            // As soon as the owner is signed in, this phone gets its own daytrace token.
             container.remote.sessionStatus.collect { status ->
                 if (status is SessionStatus.Authenticated) container.deviceProvisioner.ensureRegistered()
             }

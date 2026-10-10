@@ -1,12 +1,15 @@
 package dev.holdthisthought.ui.components
 
+import androidx.compose.ui.layout.onVisibilityChanged
+import androidx.compose.ui.graphics.graphicsLayer
+import kotlinx.coroutines.delay
+import androidx.lifecycle.repeatOnLifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.Lifecycle
+import androidx.compose.runtime.mutableLongStateOf
+import android.os.SystemClock
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.keyframes
-import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -48,7 +51,7 @@ enum class BlipMood { SLEEPY, CHEERFUL, CURIOUS, EXCITED, PROUD }
 
 /** What Blip does when you play with it. */
 enum class BlipReaction(val durationMs: Int) {
-    WAVE(1400), HOP(950), SPIN(1050), GIGGLE(950), PET(1800), DANCE(2200);
+    WAVE(1050), HOP(700), SPIN(800), GIGGLE(700), PET(1300), DANCE(1600);
 
     val lines: List<String>
         get() = when (this) {
@@ -118,30 +121,24 @@ fun Blip(
     bounceKey: Any? = null,
     onReact: ((String) -> Unit)? = null,
 ) {
-    val transition = rememberInfiniteTransition(label = "blip")
-    // Breathing loop (slow in/out comes from the sine).
-    val bob by transition.animateFloat(0f, 1f, infiniteRepeatable(tween(2600, easing = LinearEasing)), label = "bob")
-    // Secondary action: a blink, sometimes a double blink.
-    val blink by transition.animateFloat(
-        1f, 1f,
-        infiniteRepeatable(
-            keyframes {
-                durationMillis = 5200
-                1f at 2400
-                0.08f at 2480
-                1f at 2580
-                1f at 4800
-                0.08f at 4880
-                1f at 4960
-                0.08f at 5040
-                1f at 5120
-            },
-            RepeatMode.Restart,
-        ),
-        label = "blink",
-    )
-    // Idle cycle: glance left, glance right, then a little wave, every ~9 s.
-    val idle by transition.animateFloat(0f, 1f, infiniteRepeatable(tween(9000, easing = LinearEasing)), label = "idle")
+    // Idle clock for blinks, glances and the occasional wave. Blip holds still between these
+    // moments and the clock sleeps until the next one, so an idle screen draws almost no frames.
+    // During a moment it ticks at ~30 fps. It only runs while the app is in the foreground and
+    // Blip is on screen. Tap reactions still animate at full frame rate through [progress].
+    val clock = remember { mutableLongStateOf(0L) }
+    var onScreen by remember { mutableStateOf(true) }
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
+    LaunchedEffect(lifecycle, onScreen) {
+        if (!onScreen) return@LaunchedEffect
+        lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+            val start = SystemClock.uptimeMillis() - clock.longValue
+            while (true) {
+                val now = SystemClock.uptimeMillis() - start
+                clock.longValue = now
+                delay(nextIdleTick(now))
+            }
+        }
+    }
 
     var reaction by remember { mutableStateOf<BlipReaction?>(null) }
     val progress = remember { Animatable(0f) }
@@ -180,15 +177,66 @@ fun Blip(
         }
     } else Modifier
 
-    Canvas(modifier.size(size).then(gestures)) {
+    // Own render layer: each idle tick re-records only Blip, not the whole screen around it.
+    Canvas(
+        modifier
+            .size(size)
+            .onVisibilityChanged { visible -> onScreen = visible }
+            .graphicsLayer()
+            .then(gestures),
+    ) {
         val u = this.size.minDimension / 100f
         val r = reaction
-        val pose = pose(r, progress.value, bob, idle)
-        drawBlip(u, mood, level, pose, blink, r, idle)
+        // Animation values are read here, in the draw phase, so Blip redraws every frame
+        // without recomposing.
+        val ms = clock.longValue
+        val idleT = (ms % IDLE_CYCLE_MS) / IDLE_CYCLE_MS.toFloat()
+        val pose = pose(r, progress.value, 0f, idleT)
+        drawBlip(u, mood, level, pose, blinkAt(ms % BLINK_CYCLE_MS), r, idleT)
     }
 }
 
 // ---------- motion ----------
+
+private const val IDLE_FRAME_MS = 33L
+private const val IDLE_CYCLE_MS = 9000L // glance left, glance right, then a little wave
+private const val BLINK_CYCLE_MS = 5200L
+
+/** Windows (start, end in ms) within each cycle where Blip is moving; it holds still otherwise. */
+private val blinkWindows = longArrayOf(2380, 2600, 4780, 5140)
+private val idleWindows = longArrayOf(2700, 2900, 3600, 3800, 4680, 4880, 5580, 5780, 7200, 8640)
+
+/** Delay until the next idle frame: ~30 fps inside a moment, otherwise sleep until the next one. */
+private fun nextIdleTick(now: Long): Long {
+    fun untilNext(cycle: Long, windows: LongArray): Long {
+        val t = now % cycle
+        var i = 0
+        while (i < windows.size) {
+            if (t < windows[i]) return windows[i] - t
+            if (t < windows[i + 1]) return 0
+            i += 2
+        }
+        return cycle - t + windows[0]
+    }
+    val wait = minOf(untilNext(BLINK_CYCLE_MS, blinkWindows), untilNext(IDLE_CYCLE_MS, idleWindows))
+    return if (wait == 0L) IDLE_FRAME_MS else wait
+}
+
+/** Eye openness over the blink cycle: one blink, then a double blink (secondary action). */
+private val blinkKeys = floatArrayOf(
+    0f, 1f, 2400f, 1f, 2480f, 0.08f, 2580f, 1f, 4800f, 1f, 4880f, 0.08f, 4960f, 1f, 5040f, 0.08f, 5120f, 1f, 5200f, 1f,
+)
+
+private fun blinkAt(ms: Long): Float {
+    val t = ms.toFloat()
+    var i = 0
+    while (i + 2 < blinkKeys.size) {
+        val t0 = blinkKeys[i]; val v0 = blinkKeys[i + 1]; val t1 = blinkKeys[i + 2]; val v1 = blinkKeys[i + 3]
+        if (t <= t1) return v0 + (v1 - v0) * ((t - t0) / (t1 - t0)).coerceIn(0f, 1f)
+        i += 2
+    }
+    return 1f
+}
 
 /** One frame of Blip's body motion, computed from keyed poses. */
 private class Pose(
@@ -317,6 +365,18 @@ private fun pose(r: BlipReaction?, t: Float, bob: Float, idle: Float): Pose {
 
 // ---------- drawing ----------
 
+/**
+ * Reusable paths, reset each time they're drawn, so a frame allocates nothing. Drawing happens on
+ * the main thread one Blip at a time, so sharing them is safe.
+ */
+private object Paths {
+    val body = Path()
+    val shape = Path()
+    val stem = Path()
+    val star = Path()
+    val heart = Path()
+}
+
 private const val BODY_CY = 58f
 private const val BODY_W = 60f
 private const val BODY_H = 54f
@@ -360,7 +420,8 @@ private fun DrawScope.drawBlip(
     if (reaction == BlipReaction.PET) drawHearts(cx, u, pose.t)
 }
 
-private fun bodyPath(cx: Float, u: Float) = Path().apply {
+private fun bodyPath(cx: Float, u: Float) = Paths.body.apply {
+    reset()
     addOval(Rect(cx - BODY_W / 2 * u, (BODY_CY - BODY_H / 2) * u, cx + BODY_W / 2 * u, (BODY_CY + BODY_H / 2) * u))
 }
 
@@ -398,14 +459,16 @@ private fun DrawScope.drawFace(
         val ex = cx + side * spacing + glance
         when {
             mood == BlipMood.SLEEPY && reaction == null -> {
-                val p = Path().apply {
+                val p = Paths.shape.apply {
+                    reset()
                     moveTo(ex - 3.4f * u, eyeY)
                     quadraticTo(ex, eyeY + 2.6f * u, ex + 3.4f * u, eyeY)
                 }
                 drawPath(p, ink, style = Stroke(1.9f * u, cap = StrokeCap.Round))
             }
             happyEyes -> {
-                val p = Path().apply {
+                val p = Paths.shape.apply {
+                    reset()
                     moveTo(ex - 3.6f * u, eyeY + 1.2f * u)
                     quadraticTo(ex, eyeY - 3.4f * u, ex + 3.6f * u, eyeY + 1.2f * u)
                 }
@@ -435,7 +498,8 @@ private fun DrawScope.drawFace(
         reaction == BlipReaction.SPIN || reaction == BlipReaction.WAVE
     when {
         open -> {
-            val p = Path().apply {
+            val p = Paths.shape.apply {
+                reset()
                 moveTo(mx - 3.4f * u, my - 0.4f * u)
                 lineTo(mx + 3.4f * u, my - 0.4f * u)
                 quadraticTo(mx + 3.2f * u, my + 4.4f * u, mx, my + 4.4f * u)
@@ -451,7 +515,8 @@ private fun DrawScope.drawFace(
             drawCircle(ink, radius = 1.4f * u, center = Offset(mx, my + 1 * u))
         else -> {
             // A small "w" smile: the cutest default.
-            val p = Path().apply {
+            val p = Paths.shape.apply {
+                reset()
                 moveTo(mx - 3.6f * u, my)
                 quadraticTo(mx - 1.8f * u, my + 2.8f * u, mx, my + 0.5f * u)
                 quadraticTo(mx + 1.8f * u, my + 2.8f * u, mx + 3.6f * u, my)
@@ -489,7 +554,8 @@ private fun DrawScope.drawSprout(cx: Float, u: Float, tilt: Float, level: Int) {
     val base = Offset(cx + 1 * u, (BODY_CY - BODY_H / 2 + 2) * u)
     rotate(tilt, pivot = base) {
         val tip = Offset(base.x + 1.5f * u, base.y - 9 * u)
-        val stem = Path().apply {
+        val stem = Paths.stem.apply {
+            reset()
             moveTo(base.x, base.y)
             quadraticTo(base.x - 1.5f * u, base.y - 5 * u, tip.x, tip.y)
         }
@@ -522,7 +588,8 @@ private fun DrawScope.drawScarf(cx: Float, u: Float) {
 private fun DrawScope.drawCrown(cx: Float, u: Float) {
     val y = 35 * u
     val x = cx - 13 * u
-    val p = Path().apply {
+    val p = Paths.shape.apply {
+        reset()
         moveTo(x - 7 * u, y)
         lineTo(x - 7 * u, y - 6 * u)
         lineTo(x - 3.5f * u, y - 2.5f * u)
@@ -541,7 +608,8 @@ private fun DrawScope.drawSparkles(cx: Float, u: Float, phase: Float) {
         val twinkle = ((sin((phase + i / 3f) * 2 * PI) + 1) / 2).toFloat()
         val c = Offset(cx + o.x * u, o.y * u)
         val r = (1.5f + 2.5f * twinkle) * u
-        val star = Path().apply {
+        val star = Paths.star.apply {
+            reset()
             moveTo(c.x, c.y - r * 1.6f); lineTo(c.x + r * 0.4f, c.y - r * 0.4f)
             lineTo(c.x + r * 1.6f, c.y); lineTo(c.x + r * 0.4f, c.y + r * 0.4f)
             lineTo(c.x, c.y + r * 1.6f); lineTo(c.x - r * 0.4f, c.y + r * 0.4f)
@@ -560,7 +628,8 @@ private fun DrawScope.drawHearts(cx: Float, u: Float, t: Float) {
         val p = 1f - (1f - raw) * (1f - raw) // ease out
         val c = Offset(cx + dx * u + sin(raw * 2 * PI).toFloat() * 3 * u, (32 - 24 * p) * u)
         val r = 3.4f * u * (0.6f + 0.4f * smooth(seg(raw, 0f, 0.25f)))
-        val heart = Path().apply {
+        val heart = Paths.heart.apply {
+            reset()
             moveTo(c.x, c.y + r)
             cubicTo(c.x - r * 2f, c.y - r * 0.2f, c.x - r * 0.8f, c.y - r * 1.8f, c.x, c.y - r * 0.6f)
             cubicTo(c.x + r * 0.8f, c.y - r * 1.8f, c.x + r * 2f, c.y - r * 0.2f, c.x, c.y + r)

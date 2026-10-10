@@ -1,5 +1,6 @@
 package dev.holdthisthought.ui.settings
 
+import dev.holdthisthought.ui.theme.Motion
 import androidx.compose.foundation.layout.widthIn
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
@@ -85,7 +86,10 @@ fun YouScreen(
         targetState = showSettings,
         transitionSpec = {
             val dir = if (targetState) 1 else -1
-            (slideInHorizontally { it * dir / 4 } + fadeIn()) togetherWith (slideOutHorizontally { -it * dir / 4 } + fadeOut())
+            val spec = Motion.standard<androidx.compose.ui.unit.IntOffset>(Motion.Duration.medium)
+            val fade = Motion.standard<Float>(Motion.Duration.short)
+            (slideInHorizontally(spec) { it * dir / 6 } + fadeIn(fade)) togetherWith
+                (slideOutHorizontally(spec) { -it * dir / 6 } + fadeOut(fade))
         },
         label = "you",
         modifier = modifier,

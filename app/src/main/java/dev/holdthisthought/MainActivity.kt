@@ -1,11 +1,12 @@
 package dev.holdthisthought
 
+import kotlinx.coroutines.launch
+import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Row
@@ -72,6 +73,17 @@ class MainActivity : ComponentActivity() {
                 if (onboarded) AppRoot(openRequest.value) { openRequest.value = null }
                 else OnboardingScreen()
             }
+        }
+    }
+
+    override fun onStart() {
+        super.onStart()
+        // Opening the app is when fresh numbers matter: sync thoughts and collect usage now.
+        // WorkManager's first use opens its database, so keep it off the main thread.
+        val container = (application as ThoughtApplication).container
+        container.appScope.launch {
+            container.syncScheduler.requestSync()
+            container.daytraceScheduler.requestCollect()
         }
     }
 
@@ -157,8 +169,12 @@ private fun AppRoot(openRequest: String?, onOpenHandled: () -> Unit) {
                         }
                     }
                 }
-                Crossfade(targetState = tab, label = "tab", modifier = Modifier.weight(1f)) { current ->
-                    when (current) {
+                // Instant tab switch (no crossfade composing two screens at once); each tab keeps
+                // its scroll and input state.
+                val tabState = rememberSaveableStateHolder()
+                Box(Modifier.weight(1f)) {
+                  tabState.SaveableStateProvider(tab.name) {
+                    when (tab) {
                         Tab.TODAY -> TodayScreen(
                             snackbar,
                             onOpenCapture = { tab = Tab.THOUGHTS },
@@ -167,6 +183,7 @@ private fun AppRoot(openRequest: String?, onOpenHandled: () -> Unit) {
                         Tab.THOUGHTS -> ThoughtsScreen(snackbar)
                         Tab.YOU -> YouScreen(snackbar)
                     }
+                  }
                 }
             }
         }

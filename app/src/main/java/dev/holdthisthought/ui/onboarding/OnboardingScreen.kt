@@ -1,5 +1,6 @@
 package dev.holdthisthought.ui.onboarding
 
+import dev.holdthisthought.ui.theme.Motion
 import android.Manifest
 import android.app.Application
 import android.os.Build
@@ -147,7 +148,7 @@ fun OnboardingScreen(viewModel: OnboardingViewModel = viewModel()) {
             Spacer(Modifier.height(24.dp))
             Blip(mood = if (step == 0) BlipMood.EXCITED else BlipMood.CHEERFUL, level = 1, size = 190.dp, bounceKey = step, onReact = {})
             Spacer(Modifier.height(12.dp))
-            AnimatedContent(step, transitionSpec = { fadeIn() togetherWith fadeOut() }, label = "step") { current ->
+            AnimatedContent(step, transitionSpec = { fadeIn(Motion.standard(Motion.Duration.medium)) togetherWith fadeOut(Motion.standard(Motion.Duration.short)) }, label = "step") { current ->
                 Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
                     when (current) {
                         0 -> GoalStep(viewModel) {

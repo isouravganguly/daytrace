@@ -1,5 +1,6 @@
 package dev.holdthisthought.ui.components
 
+import dev.holdthisthought.ui.theme.Motion
 import dev.holdthisthought.ui.theme.Forest
 import dev.holdthisthought.ui.theme.Earth
 import dev.holdthisthought.ui.theme.pressSquish
@@ -124,12 +125,12 @@ fun QuestRing(
     val track = LocalGameColors.current.track
     val sweep by animateFloatAsState(
         state.fraction,
-        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow),
+        animationSpec = Motion.Springs.gentle(),
         label = "quest-sweep",
     )
     val pop by animateFloatAsState(
         if (state.done) 1f else 0.92f,
-        animationSpec = spring(dampingRatio = Spring.DampingRatioHighBouncy, stiffness = Spring.StiffnessMediumLow),
+        animationSpec = Motion.Springs.bouncy(),
         label = "quest-pop",
     )
     Column(
@@ -185,8 +186,8 @@ fun HeroCard(
     val game = LocalGameColors.current
     val colors = MaterialTheme.colorScheme
     val level = state.level
-    val progress by animateFloatAsState(level.fraction, tween(900, easing = FastOutSlowInEasing), label = "xp")
-    val goal by animateFloatAsState(state.dailyGoalFraction, tween(900, easing = FastOutSlowInEasing), label = "goal")
+    val progress by animateFloatAsState(level.fraction, Motion.standard(Motion.Duration.hero), label = "xp")
+    val goal by animateFloatAsState(state.dailyGoalFraction, Motion.standard(Motion.Duration.hero), label = "goal")
     var reply by remember { mutableStateOf<String?>(null) }
     LaunchedEffect(reply) {
         if (reply != null) {
@@ -372,7 +373,7 @@ fun EmojiChoice(
 ) {
     val scale by animateFloatAsState(
         if (selected) 1.12f else 1f,
-        spring(dampingRatio = Spring.DampingRatioHighBouncy),
+        Motion.Springs.bouncy(),
         label = "emoji-scale",
     )
     Column(
@@ -422,7 +423,7 @@ fun CelebrationOverlay(celebration: Celebration?, modifier: Modifier = Modifier)
 private fun XpToast(celebration: Celebration, modifier: Modifier) {
     val anim = remember(celebration.id) { Animatable(0f) }
     LaunchedEffect(celebration.id) {
-        anim.animateTo(1f, tween(2400, easing = LinearEasing))
+        anim.animateTo(1f, tween(1600, easing = LinearEasing))
     }
     val t = anim.value
     // Rise in, hold, fade out.
@@ -495,7 +496,7 @@ private fun Confetti(key: Long) {
         }
     }
     val progress = remember(key) { Animatable(0f) }
-    LaunchedEffect(key) { progress.animateTo(1f, tween(1600, easing = LinearEasing)) }
+    LaunchedEffect(key) { progress.animateTo(1f, tween(1100, easing = LinearEasing)) }
     val t = progress.value
     if (t >= 1f) return
     Canvas(Modifier.fillMaxSize()) {

@@ -41,11 +41,30 @@ Each step is small, measured on the device and shipped separately. Cold start is
    - Request sync and collect when the app opens, not on every process start.
    - Show Today's layout immediately and fill the numbers in.
 5. **Data flow (F7).** Share one thoughts flow in Today and skip game recomputation when its inputs are unchanged.
-6. **APK size (F8).** Ship only `arm64-v8a` and `armeabi-v7a`, and consider unbundled ML Kit, where Play Services downloads the model.
+6. **APK size (F8, next).** Ship only `arm64-v8a` and `armeabi-v7a`, and consider unbundled ML Kit, where Play Services downloads the model.
 7. **Later.**
    - A macrobenchmark module to generate a real baseline profile.
    - JankStats or `FrameMetrics` logging in debug builds to catch slow frames.
 
 ## Results
 
-(Filled in as each step ships.)
+These are measured on the test phone: a release build, AOT-compiled, on a 120 Hz screen.
+
+| Metric | Before | After |
+|---|---|---|
+| Cold start (`TotalTime`, ms) | 1,008–1,688 (debug) | **130–150** (steps 1 and 4) |
+| APK size | 76 MB (debug) | 48 MB (release, R8; ML Kit native libs are most of it) |
+| CPU while Today sits idle | ~70% of a core | **~13%** average, 0% between Blip's moments |
+| Frames drawn while idle on Today | ~240/s (every vsync) | ~23/s average, only during blinks, glances and waves |
+| Frames with Blip scrolled off screen | ~60/s | **0** |
+| Janky frames (idle) | 0% | <1% |
+| Tab switch | 300 ms crossfade composing two screens | Instant, with state kept |
+| Entrance animation | 450 ms + 45 ms stagger, every tab visit | 180 ms + 20 ms stagger, once per launch |
+
+Notes:
+- Blip had three effects stacked. It recomposed every frame (now it reads values in the draw
+  phase), it re-recorded the whole screen every frame (now it has its own layer), and it animated
+  continuously (now it's event-driven and pauses off screen or in the background).
+- Sync and usage collection are now requested when the app opens, not on every process start, so
+  the 15-minute worker no longer queues a second collection each time it runs.
+- ML Kit no longer initialises at app start. It starts on the first plant photo.

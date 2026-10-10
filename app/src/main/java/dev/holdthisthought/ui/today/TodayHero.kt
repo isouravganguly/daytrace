@@ -1,5 +1,6 @@
 package dev.holdthisthought.ui.today
 
+import dev.holdthisthought.ui.theme.Motion
 import dev.holdthisthought.ui.theme.Earth
 import dev.holdthisthought.ui.theme.Forest
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -137,7 +138,7 @@ private fun StepsRing(steps: Int?, goal: Int, connected: Boolean, onConnect: (()
     val game = LocalGameColors.current
     val fraction by animateFloatAsState(
         ((steps ?: 0).toFloat() / goal).coerceIn(0f, 1f),
-        tween(900, easing = FastOutSlowInEasing),
+        Motion.standard(Motion.Duration.hero),
         label = "steps",
     )
     val clickable = if (!connected && onConnect != null) Modifier.clickable(onClick = onConnect) else Modifier

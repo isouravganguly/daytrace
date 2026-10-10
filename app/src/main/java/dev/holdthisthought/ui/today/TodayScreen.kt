@@ -218,8 +218,8 @@ fun TodayScreen(
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 16.dp),
         ) {
-            Box(Modifier.popIn(0)) { Header(state) }
-            Box(Modifier.popIn(1)) { TodayHero(
+            Box(Modifier.popIn("today", 0)) { Header(state) }
+            Box(Modifier.popIn("today", 1)) { TodayHero(
                 state = state,
                 mood = BlipVoice.mood(state, nudge, wakeup != null, hour, excited),
                 message = BlipVoice.line(state, nudge, wakeup != null, hour),
@@ -231,8 +231,8 @@ fun TodayScreen(
                 sleepMinutes = todayHealth?.sleepMinutes ?: 0,
                 actions = nudge?.let { { NudgeActions(it, actions) } },
             ) }
-            Box(Modifier.popIn(2)) { QuestsCard(state, actions) }
-            Box(Modifier.popIn(3)) {
+            Box(Modifier.popIn("today", 2)) { QuestsCard(state, actions) }
+            Box(Modifier.popIn("today", 3)) {
                 QuickLogCard(
                     latestMood = entries.lastOrNull { it.type == EntryType.MOOD }?.value?.toIntOrNull(),
                     meals = entries.filter { it.type == EntryType.MEAL }.map { it.value }.toSet() + todayHealth?.meals.orEmpty(),

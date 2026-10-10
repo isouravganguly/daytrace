@@ -34,18 +34,19 @@ import kotlinx.coroutines.launch
  *  6. Slow in & slow out: [Easing.standard] everywhere; nothing moves linearly except loops.
  *  7. Arcs: hops, hearts and confetti travel on curves, never straight lines.
  *  8. Secondary action: blinking, glancing eyes and breathing while idle.
- *  9. Timing: [Duration] keeps small things quick and big moments slower.
+ *  9. Timing: [Duration] keeps everything sharp (120-240 ms); only Blip's playful reactions run longer.
  * 10. Exaggeration: landings squash harder than feels "real", so they read at small sizes.
  * 11. Solid drawing: Blip has a consistent volume with one cel-shade, the same from every pose.
  * 12. Appeal: big head, low wide eyes, blush and a tiny sprout: simple, readable, cute.
  */
 object Motion {
+    /** Sharp and quick: nothing in everyday UI makes you wait more than ~200 ms. */
     object Duration {
-        const val instant = 90
-        const val short = 160
-        const val medium = 280
-        const val long = 450
-        const val hero = 700
+        const val instant = 70
+        const val short = 120
+        const val medium = 180
+        const val long = 240
+        const val hero = 400
     }
 
     object Easing {
@@ -63,11 +64,11 @@ object Motion {
 
     object Springs {
         /** Playful settle with a small overshoot: buttons, chips, Blip. */
-        fun <T> bouncy() = spring<T>(dampingRatio = 0.5f, stiffness = 420f)
+        fun <T> bouncy() = spring<T>(dampingRatio = 0.6f, stiffness = 900f)
         /** Calm, no overshoot: layout and colour. */
-        fun <T> gentle() = spring<T>(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessMediumLow)
+        fun <T> gentle() = spring<T>(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessMedium)
         /** Quick and firm: the squash on press. */
-        fun <T> snappy() = spring<T>(dampingRatio = 0.7f, stiffness = 1400f)
+        fun <T> snappy() = spring<T>(dampingRatio = 0.75f, stiffness = 2400f)
     }
 
     fun <T> standard(duration: Int = Duration.medium) = tween<T>(duration, easing = Easing.standard)
@@ -100,22 +101,27 @@ fun Modifier.pressSquish(amount: Float = 0.06f): Modifier = composed {
         }
 }
 
+/** Screens whose entrance already played this launch; revisiting a tab shows it instantly. */
+private val playedIntros = mutableSetOf<String>()
+
 /**
- * Staged entrance: rises a little on an arc, fades in and settles with a slight overshoot.
- * [order] staggers siblings so a screen assembles in reading order instead of all at once.
+ * Staged entrance: a quick rise and fade, staggered 20 ms per [order] so a screen assembles in
+ * reading order. It plays once per app launch for each [screen]; after that it's a no-op, so
+ * switching tabs never waits on animation.
  */
-fun Modifier.popIn(order: Int = 0): Modifier = composed {
+fun Modifier.popIn(screen: String, order: Int = 0): Modifier = composed {
+    val key = "$screen#$order"
+    val firstTime = remember { key !in playedIntros }
+    if (!firstTime) return@composed this
     val progress = remember { Animatable(0f) }
     LaunchedEffect(Unit) {
-        delay(order * 45L)
-        progress.animateTo(1f, tween(Motion.Duration.long, easing = Motion.Easing.overshoot))
+        playedIntros += key
+        delay(order * 20L)
+        progress.animateTo(1f, tween(Motion.Duration.medium, easing = Motion.Easing.decelerate))
     }
     graphicsLayer {
         val p = progress.value
-        alpha = p.coerceIn(0f, 1f)
-        translationY = (1f - p) * 24.dp.toPx()
-        val s = 0.96f + 0.04f * p
-        scaleX = s
-        scaleY = s
+        alpha = p
+        translationY = (1f - p) * 8.dp.toPx()
     }
 }

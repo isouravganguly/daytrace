@@ -105,10 +105,10 @@ fun ThoughtsScreen(
             }
         }
         item(key = "composer") {
-            Composer(snackbar, Modifier.padding(horizontal = Space.gutter).popIn(0))
+            Composer(snackbar, Modifier.padding(horizontal = Space.gutter).popIn("thoughts", 0))
         }
         item(key = "search") {
-            Column(Modifier.padding(top = 10.dp).popIn(1)) {
+            Column(Modifier.padding(top = 10.dp).popIn("thoughts", 1)) {
                 SearchField(
                     query = filters.query,
                     onQueryChange = viewModel::setQuery,

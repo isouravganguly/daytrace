@@ -119,9 +119,11 @@ class DaytraceSettings(context: Context) {
         const val FILE = "daytrace"
         const val DEFAULT_WAKE_TARGET = 7 * 60 + 30
 
+        /** From `SUPABASE_URL` in local.properties; blank (tracing stays local) when it isn't set. */
         val DEFAULT_ENDPOINT: String =
-            (BuildConfig.SUPABASE_URL.ifBlank { "https://<project>.supabase.co" })
-                .trimEnd('/') + "/functions/v1/daytrace"
+            BuildConfig.SUPABASE_URL.takeIf { it.isNotBlank() }
+                ?.let { it.trimEnd('/') + "/functions/v1/daytrace" }
+                .orEmpty()
 
         private fun defaultDeviceName(): String =
             listOf(Build.MANUFACTURER.replaceFirstChar { it.uppercase() }, Build.MODEL)

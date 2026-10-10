@@ -19,8 +19,15 @@ Read `PROJECT_CONTEXT.md`, then `DAYTRACE_PLAN.md` (the current product plan), t
 - Logo: a simple gold sun (circle and bold rounded rays, **no face**) on a blue gradient. The
   user rejected a swoosh and doesn't want eyes on the sun.
 - Does not want a circular speak button. Voice is a wide pill ("Hold to talk", or tap for hands-free).
-- After every Android rebuild, reinstall the APK on the test phone over USB (Xiaomi phones need
-  "Install via USB" turned on) and on the emulator if it's running.
+- After every Android rebuild, install the **release** build on the test phone over USB (Xiaomi
+  phones need "Install via USB" turned on). It's R8-optimised and signed with the local debug key,
+  so it installs over earlier builds and keeps data:
+  `./gradlew assembleRelease && adb install -r app/build/outputs/apk/release/app-release.apk &&
+  adb shell cmd package compile -m speed-profile -f dev.holdthisthought`.
+  Debug builds are several times slower and aren't representative. The release build isn't
+  debuggable, so `run-as` database edits need a debug build.
+- Performance budget and measurements: `docs/PERFORMANCE_PLAN.md`. Keep motion on `Motion` tokens
+  (120–240 ms), and never run an always-on animation: Blip's idle clock sleeps between moments.
 - Daytrace device tokens are entered by the user in You → Day tracing. Never hardcode, print or
   commit them.
 

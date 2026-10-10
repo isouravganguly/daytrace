@@ -1,5 +1,8 @@
 package dev.holdthisthought.ui.you
 
+import java.time.format.DateTimeFormatter
+import java.time.LocalDate
+import android.app.DatePickerDialog
 import android.app.Application
 import android.app.NotificationManager
 import android.app.TimePickerDialog
@@ -34,6 +37,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import dev.holdthisthought.ThoughtApplication
 import dev.holdthisthought.game.DaySchedule
+
+private val DayFormat = DateTimeFormatter.ofPattern("EEE, d MMM")
 
 class SleepViewModel(application: Application) : AndroidViewModel(application) {
     private val container = (application as ThoughtApplication).container
@@ -88,6 +93,39 @@ fun SleepSection(viewModel: SleepViewModel = viewModel()) {
             ) {
                 Text("Rings at", style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
                 Text(DaySchedule.format(alarm.minute), style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary)
+            }
+            // Travelling, or nowhere near a plant: skip mornings up to a chosen day, then it's back.
+            val today = LocalDate.now()
+            if (alarm.pausedOn(today)) {
+                val last = alarm.pausedThrough!!
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                    Column(Modifier.weight(1f)) {
+                        Text("Paused through ${last.format(DayFormat)}", style = MaterialTheme.typography.bodyLarge)
+                        Text(
+                            "Back on ${last.plusDays(1).format(DayFormat)} at ${DaySchedule.format(alarm.minute)}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    TextButton(onClick = { viewModel.alarm.pauseThrough(null) }) { Text("Resume") }
+                }
+            } else {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable {
+                            DatePickerDialog(
+                                context,
+                                { _, y, m, d -> viewModel.alarm.pauseThrough(LocalDate.of(y, m + 1, d)) },
+                                today.year, today.monthValue - 1, today.dayOfMonth,
+                            ).apply { datePicker.minDate = System.currentTimeMillis() }.show()
+                        }
+                        .padding(vertical = 10.dp),
+                ) {
+                    Text("Pause for a trip", style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
+                    Text("Pick last day", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary)
+                }
             }
             if (!exact) {
                 TextButton(onClick = {
